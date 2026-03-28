@@ -39,11 +39,28 @@
       .search-big input { flex: 1; padding: 12px 16px; font-size: 16px; background: #0d1117; border: 1px solid #30363d; color: #c9d1d9; border-radius: 8px; }
       .search-big button { padding: 12px 24px; background: #238636; border: 1px solid #2ea043; color: #fff; border-radius: 8px; cursor: pointer; font-size: 16px; }
       .search-big button:hover { background: #2ea043; }
-      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-      .clone-url { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 8px 12px; font-family: monospace; font-size: 13px; color: #c9d1d9; display: flex; align-items: center; justify-content: space-between; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+      .clone-url { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 8px 12px; font-family: monospace; font-size: 13px; color: #c9d1d9; display: flex; align-items: center; justify-content: space-between; overflow: hidden; }
+      .clone-url code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
       .score-badge { background: #1f2d1f; color: #2ea043; padding: 2px 8px; border-radius: 12px; font-size: 11px; }
       code { font-family: monospace; background: #161b22; padding: 2px 6px; border-radius: 4px; }
       pre code { display: block; padding: 16px; overflow-x: auto; }
+      pre { overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; display: block; overflow-x: auto; }
+      @media (max-width: 640px) {
+        .container { padding: 0 16px; }
+        .hero { padding: 40px 0 32px; }
+        .hero h1 { font-size: 32px; }
+        .hero p { font-size: 16px; }
+        nav .nav-inner { gap: 12px; flex-wrap: wrap; }
+        nav form { max-width: 100%; margin-left: 0; width: 100%; }
+        .grid { grid-template-columns: 1fr; }
+        .search-big { flex-direction: column; }
+        .search-big button { width: 100%; }
+        .repo-card .meta { flex-wrap: wrap; gap: 8px; }
+        h1 { font-size: 24px; }
+        .badge { margin-bottom: 4px; }
+      }
     </style>
   </head>
   <body>

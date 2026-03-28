@@ -103,11 +103,14 @@
   <h2 style="font-size: 16px; color: #f0f6fc; margin-bottom: 12px;">Recent commits</h2>
   <div style="background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; font-family: monospace;">
     <% @commits.each_with_index do |commit, i| %>
-      <div style="padding: 10px 16px; <%= i > 0 ? 'border-top: 1px solid #21262d;' : '' %> display: flex; align-items: center; gap: 12px;">
-        <code style="color: #58a6ff; font-size: 12px; min-width: 60px;"><%= commit[:hash] %></code>
-        <span style="flex: 1; font-size: 13px; color: #c9d1d9; font-family: -apple-system, sans-serif;"><%= commit[:subject] %></span>
-        <span style="font-size: 12px; color: #8b949e; white-space: nowrap; font-family: -apple-system, sans-serif;"><%= commit[:author] %></span>
-        <span style="font-size: 12px; color: #6e7681; white-space: nowrap; font-family: -apple-system, sans-serif;"><%= commit[:time] %></span>
+      <div style="padding: 10px 16px; <%= i > 0 ? 'border-top: 1px solid #21262d;' : '' %>">
+        <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+          <code style="color: #58a6ff; font-size: 12px; flex-shrink: 0;"><%= commit[:hash] %></code>
+          <span style="font-size: 13px; color: #c9d1d9; font-family: -apple-system, sans-serif; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= commit[:subject] %></span>
+        </div>
+        <div style="font-size: 12px; color: #6e7681; font-family: -apple-system, sans-serif; margin-top: 2px;">
+          <span style="color: #8b949e;"><%= commit[:author] %></span> · <%= commit[:time] %>
+        </div>
       </div>
     <% end %>
   </div>
