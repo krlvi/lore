@@ -71,18 +71,23 @@ module Api
       private
 
       def repo_json(repo)
+        host = ENV["LORE_HOST"] || request_base_url
         {
           owner: repo.owner,
           name: repo.name,
           description: repo.description,
           tags: repo.tags_array,
-          clone_url: repo.clone_url,
-          web_url: repo.web_url,
+          clone_url: repo.clone_url(base_url: host),
+          web_url: repo.web_url(base_url: host),
           default_branch: "main",
           stars: repo.stars_count,
           created_at: repo.created_at,
           last_pushed_at: repo.last_pushed_at
         }
+      end
+
+      def request_base_url
+        "#{request.protocol}#{request.host_with_port}"
       end
     end
   end

@@ -43,7 +43,7 @@ module Lore
     config.lore_repo_root = ENV.fetch("LORE_REPO_ROOT", Rails.root.join("storage", "repos").to_s)
 
     # Lore: base URL for generating web/clone URLs
-    config.lore_base_url = ENV.fetch("LORE_BASE_URL", "http://localhost:3000")
+    config.lore_base_url = ENV.fetch("LORE_BASE_URL", "http://localhost:4567")
 
     # Mount Git HTTP middleware before Rails router
     require_relative "../app/middleware/git_http_middleware"

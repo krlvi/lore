@@ -9,12 +9,14 @@ class Repo < ApplicationRecord
 
   after_create :initialize_bare_repo
 
-  def web_url
-    "#{Lore::Application.config.lore_base_url}/#{owner}/#{name}"
+  def web_url(base_url: nil)
+    host = base_url || ENV.fetch("LORE_HOST", Lore::Application.config.lore_base_url)
+    "#{host}/#{owner}/#{name}"
   end
 
-  def clone_url
-    "#{Lore::Application.config.lore_base_url}/git/#{owner}/#{name}.git"
+  def clone_url(base_url: nil)
+    host = base_url || ENV.fetch("LORE_HOST", Lore::Application.config.lore_base_url)
+    "#{host}/git/#{owner}/#{name}.git"
   end
 
   def tags_array
