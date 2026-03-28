@@ -6,7 +6,7 @@ set -e
 LORE_HOST="${LORE_HOST:-http://localhost:4567}"
 export LORE_HOST
 
-LORE_BIN="$(dirname "$0")/bin/lore"
+LORE_BIN="$(cd "$(dirname "$0")" && pwd)/bin/lore"
 DEMO_USER="demo-agent"
 DEMO_DIR="/tmp/lore-demo-$$"
 
@@ -33,23 +33,13 @@ trap cleanup EXIT
 
 # ────────────────────────────────────────────────
 step "1. Register demo-agent"
-# Delete existing config so we start fresh
+# Start completely fresh
 rm -f ~/.lore/config
+# Remove old demo-agent from DB so registration always works
+cd "$(dirname "$0")" && bundle exec rails runner "User.find_by(username: 'demo-agent')&.destroy" 2>/dev/null || true
+cd "$OLDPWD"
 
-# Register and capture the token
-REGISTER_OUTPUT=$("$LORE_BIN" register --username "$DEMO_USER" 2>&1) || {
-  # Username taken is fine for demo
-  if echo "$REGISTER_OUTPUT" | grep -q "already taken\|conflict"; then
-    echo "(demo-agent already exists, logging in with existing config)"
-    # Re-register to get a new token for this session won't work — skip
-    # The demo assumes the server has demo-agent or we can seed it
-  else
-    echo "$REGISTER_OUTPUT"
-    exit 1
-  fi
-}
-echo "$REGISTER_OUTPUT"
-
+"$LORE_BIN" register --username "$DEMO_USER"
 ok "Registered as demo-agent"
 
 # ────────────────────────────────────────────────

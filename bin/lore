@@ -172,6 +172,15 @@ def cmd_clone(args)
 
   repo = data["repo"] || data
   clone_url = repo["clone_url"]
+
+  # Embed token in URL for authenticated clone if available
+  if token && clone_url&.start_with?("http")
+    uri = URI.parse(clone_url)
+    uri.user = config["username"] || "lore"
+    uri.password = token
+    clone_url = uri.to_s
+  end
+
   puts "Cloning #{owner}/#{name}..."
   system("git", "clone", clone_url)
 end
@@ -215,7 +224,24 @@ def cmd_publish(args)
 end
 
 def cmd_push(_args)
-  system("git push lore main") || exit($?.exitstatus)
+  # Try 'lore' remote first, fall back to 'origin'
+  remote = `git remote`.split.include?("lore") ? "lore" : "origin"
+  
+  # Embed token into remote URL if needed
+  if token
+    remote_url = `git remote get-url #{remote}`.strip
+    if remote_url.start_with?("http") && !remote_url.include?("@")
+      uri = URI.parse(remote_url)
+      uri.user = config["username"] || "lore"
+      uri.password = token
+      system("git", "remote", "set-url", remote, uri.to_s)
+    end
+  end
+
+  puts "Pushing to Lore..."
+  system("git", "pull", "--rebase", remote, "main", out: File::NULL, err: File::NULL)
+  system("git", "push", remote, "main") || exit($?.exitstatus)
+  puts "✓ Pushed!"
 end
 
 # --- Dispatch ---
