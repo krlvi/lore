@@ -28,7 +28,9 @@ class WebController < ApplicationController
   # Repo detail page
   def repo
     @repo = Repo.find_by!(owner: params[:owner], name: params[:name])
+    @base_url = request.base_url
     @readme = read_repo_readme(@repo)
+    @commits = read_repo_commits(@repo)
   rescue ActiveRecord::RecordNotFound
     render file: "#{Rails.root}/public/404.html", status: :not_found
   end
@@ -41,10 +43,20 @@ class WebController < ApplicationController
 
   def read_repo_readme(repo)
     return nil unless Dir.exist?(repo.disk_path)
-    # Try to read README from bare repo
     content = `git --git-dir=#{Shellwords.escape(repo.disk_path)} show HEAD:README.md 2>/dev/null`.strip
     content.presence
   rescue
     nil
+  end
+
+  def read_repo_commits(repo)
+    return [] unless Dir.exist?(repo.disk_path)
+    output = `git --git-dir=#{Shellwords.escape(repo.disk_path)} log --pretty=format:"%h|%s|%an|%ar" -8 2>/dev/null`
+    output.lines.map do |line|
+      hash, subject, author, time = line.chomp.split("|", 4)
+      { hash: hash, subject: subject, author: author, time: time }
+    end
+  rescue
+    []
   end
 end

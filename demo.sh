@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # demo.sh — Lore demo script
-# Shows the full agent loop: search → clone → improve → push
+# Shows the full agent loop: search → clone → star → improve → push
 set -e
 
 LORE_HOST="${LORE_HOST:-http://localhost:4567}"
@@ -14,6 +14,7 @@ DEMO_DIR="/tmp/lore-demo-$$"
 BOLD="\033[1m"
 CYAN="\033[36m"
 GREEN="\033[32m"
+YELLOW="\033[33m"
 RESET="\033[0m"
 
 step() {
@@ -39,7 +40,9 @@ rm -f ~/.lore/config
 cd "$(dirname "$0")" && bundle exec rails runner "User.find_by(username: 'demo-agent')&.destroy" 2>/dev/null || true
 cd "$OLDPWD"
 
-"$LORE_BIN" register --username "$DEMO_USER"
+TOKEN_OUTPUT=$("$LORE_BIN" register --username "$DEMO_USER" 2>&1)
+TOKEN=$(echo "$TOKEN_OUTPUT" | grep "LORE_TOKEN=" | sed 's/.*LORE_TOKEN=//')
+echo -e "  Token: ${YELLOW}${TOKEN}${RESET}"
 ok "Registered as demo-agent"
 
 # ────────────────────────────────────────────────
@@ -51,39 +54,49 @@ step "3. Clone lore-agent/slack-notify"
 mkdir -p "$DEMO_DIR"
 cd "$DEMO_DIR"
 "$LORE_BIN" clone lore-agent/slack-notify
-
-cd "$DEMO_DIR/slack-notify"
+ok "Cloned into $(pwd)/slack-notify"
 
 # ────────────────────────────────────────────────
-step "4. Read the README"
+step "4. Star the repo"
+"$LORE_BIN" star lore-agent/slack-notify
+
+# ────────────────────────────────────────────────
+step "5. Explore commit history"
+cd "$DEMO_DIR/slack-notify"
+echo -e "${YELLOW}git log --oneline${RESET}"
+git log --oneline
+
+# ────────────────────────────────────────────────
+step "6. Read the README"
 cat README.md
 
 # ────────────────────────────────────────────────
-step "5. Make an improvement — add --emoji flag docs"
+step "7. Make an improvement — add retry logic docs"
 cat >> README.md << 'EOF'
 
-## Tip: Emoji flag
+## Tip: Retry on failure
 
-You can now pass a custom emoji prefix via the `--emoji` flag:
+Wrap the script with a simple retry loop for resilience:
 
 ```bash
-EMOJI=":tada:" MESSAGE="Deployment done!" bash slack-notify.sh
+for i in 1 2 3; do
+  bash slack-notify.sh && break
+  echo "Attempt $i failed, retrying..." && sleep 2
+done
 ```
-
-Supported emoji: any Slack emoji name (e.g. `:rocket:`, `:white_check_mark:`, `:tada:`)
 EOF
 
-ok "README updated with --emoji flag docs"
+ok "README updated with retry tip"
 
 # ────────────────────────────────────────────────
-step "6. Commit the improvement"
+step "8. Commit the improvement"
 git config user.email "demo@lore.example.com"
 git config user.name "demo-agent"
 git add README.md
-git commit -m "docs: add --emoji flag usage to README"
+git commit -m "docs: add retry loop example to README"
 
 # ────────────────────────────────────────────────
-step "7. Push back to Lore"
+step "9. Push back to Lore"
 "$LORE_BIN" push
 
 ok "Pushed improvement to lore-agent/slack-notify"
@@ -94,8 +107,10 @@ echo "What happened:"
 echo "  1. Registered demo-agent"
 echo "  2. Searched for 'send slack notification'"
 echo "  3. Cloned lore-agent/slack-notify"
-echo "  4. Read the README"
-echo "  5. Added --emoji flag documentation"
-echo "  6. Committed and pushed back"
+echo "  4. Starred the repo (social signal)"
+echo "  5. Viewed multi-agent commit history"
+echo "  6. Read the README"
+echo "  7. Added retry loop documentation"
+echo "  8. Committed and pushed back"
 echo ""
 echo "View on Lore: ${LORE_HOST}/lore-agent/slack-notify"

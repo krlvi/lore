@@ -16,27 +16,86 @@
   </div>
 </div>
 
+<% clone_url = @repo.clone_url(base_url: @base_url) %>
+<% lore_clone_cmd = "lore clone #{@owner}/#{@repo.name}" %>
+
 <div style="background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
   <h2 style="margin-top: 0; margin-bottom: 12px; font-size: 16px;">Clone this repo</h2>
   <div class="clone-url">
-    <code id="clone-url"><%= @repo.clone_url %></code>
-    <button onclick="navigator.clipboard.writeText('<%= @repo.clone_url %>'); this.textContent='Copied!';"
+    <code id="clone-url"><%= clone_url %></code>
+    <button onclick="navigator.clipboard.writeText('<%= clone_url %>'); this.textContent='Copied!';"
             style="background: #21262d; border: 1px solid #30363d; color: #c9d1d9; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
       Copy
     </button>
   </div>
   <p style="margin-top: 12px; font-size: 13px; color: #8b949e;">
-    <code>git clone <%= @repo.clone_url %></code>
+    <code>git clone <%= clone_url %></code>
     <span style="margin: 0 8px;">or</span>
-    <code>lore clone <%= @owner %>/<%= @repo.name %></code>
+    <code><%= lore_clone_cmd %></code>
   </p>
 </div>
 
 <% if @readme.present? %>
-  <div style="background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px;">
+  <div style="background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
     <h2 style="margin-top: 0; margin-bottom: 16px; font-size: 16px;">README.md</h2>
-    <pre style="white-space: pre-wrap; font-family: -apple-system, sans-serif; color: #c9d1d9; line-height: 1.6;"><%= @readme %></pre>
+    <div id="readme-content" style="color: #c9d1d9; line-height: 1.7;">
+      <div id="readme-raw" style="display:none;"><%= @readme %></div>
+      <div id="readme-rendered"></div>
+    </div>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    (function() {
+      var raw = document.getElementById('readme-raw').textContent;
+      document.getElementById('readme-rendered').innerHTML = marked.parse(raw);
+      // Style rendered markdown
+      var rendered = document.getElementById('readme-rendered');
+      rendered.querySelectorAll('h1,h2,h3').forEach(function(el) {
+        el.style.color = '#f0f6fc';
+        el.style.borderBottom = '1px solid #30363d';
+        el.style.paddingBottom = '8px';
+        el.style.marginTop = '24px';
+        el.style.marginBottom = '12px';
+      });
+      rendered.querySelectorAll('code').forEach(function(el) {
+        if (el.parentElement.tagName !== 'PRE') {
+          el.style.background = '#0d1117';
+          el.style.padding = '2px 6px';
+          el.style.borderRadius = '4px';
+          el.style.fontFamily = 'monospace';
+        }
+      });
+      rendered.querySelectorAll('pre').forEach(function(el) {
+        el.style.background = '#0d1117';
+        el.style.border = '1px solid #30363d';
+        el.style.borderRadius = '6px';
+        el.style.padding = '16px';
+        el.style.overflowX = 'auto';
+        el.style.marginBottom = '16px';
+      });
+      rendered.querySelectorAll('table').forEach(function(el) {
+        el.style.borderCollapse = 'collapse';
+        el.style.width = '100%';
+        el.style.marginBottom = '16px';
+      });
+      rendered.querySelectorAll('th,td').forEach(function(el) {
+        el.style.border = '1px solid #30363d';
+        el.style.padding = '8px 12px';
+        el.style.textAlign = 'left';
+      });
+      rendered.querySelectorAll('th').forEach(function(el) {
+        el.style.background = '#161b22';
+        el.style.color = '#f0f6fc';
+      });
+      rendered.querySelectorAll('a').forEach(function(el) {
+        el.style.color = '#58a6ff';
+      });
+      rendered.querySelectorAll('p').forEach(function(el) {
+        el.style.marginBottom = '12px';
+        el.style.color = '#c9d1d9';
+      });
+    })();
+  </script>
 <% end %>
 
 <div style="margin-top: 24px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 16px; font-size: 13px; color: #8b949e;">

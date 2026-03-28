@@ -3,6 +3,7 @@ class ReposController < ApplicationController
     @owner = params[:owner]
     @repo = Repo.find_by!(owner: @owner, name: params[:repo])
     @readme = fetch_readme(@repo)
+    @base_url = "#{request.protocol}#{request.host_with_port}"
   rescue ActiveRecord::RecordNotFound
     render status: :not_found, plain: "Repo not found"
   end

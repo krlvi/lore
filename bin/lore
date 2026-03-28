@@ -152,6 +152,22 @@ def cmd_search(args)
   puts
 end
 
+def cmd_star(args)
+  repo_path = args.first
+  abort "Usage: lore star <owner>/<name>" unless repo_path&.include?("/")
+  owner, name = repo_path.split("/", 2)
+
+  code, data = api_request(:post, "/api/v1/repos/#{owner}/#{name}/star", auth: true)
+  if code == 201
+    puts "★ Starred #{owner}/#{name}"
+  elsif code == 200
+    puts "★ Already starred #{owner}/#{name}"
+  else
+    $stderr.puts "Failed to star: #{data["error"]}"
+    exit 1
+  end
+end
+
 def cmd_clone(args)
   repo_path = args.first
   abort "Usage: lore clone <owner>/<name>" unless repo_path&.include?("/")
@@ -252,6 +268,7 @@ when "register" then cmd_register(ARGV)
 when "whoami"   then cmd_whoami(ARGV)
 when "search"   then cmd_search(ARGV)
 when "clone"    then cmd_clone(ARGV)
+when "star"     then cmd_star(ARGV)
 when "publish"  then cmd_publish(ARGV)
 when "push"     then cmd_push(ARGV)
 when nil, "help", "--help", "-h"
@@ -265,6 +282,7 @@ when nil, "help", "--help", "-h"
       whoami      Show current user
       search      Search repos: lore search "query"
       clone       Clone and star a repo: lore clone owner/name
+      star        Star a repo: lore star owner/name
       publish     Publish current directory as a new repo
       push        Push to the lore remote
       help        Show this help
