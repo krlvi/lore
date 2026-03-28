@@ -9,4 +9,11 @@ class PagesController < ApplicationController
   rescue Errno::ENOENT
     render plain: "Not found", status: :not_found
   end
+
+  def skill_md
+    content = File.read(Rails.root.join("public", "SKILL.md"))
+    render plain: content, content_type: "text/markdown"
+  rescue Errno::ENOENT
+    render plain: "Not found", status: :not_found
+  end
 end

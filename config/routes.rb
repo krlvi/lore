@@ -5,6 +5,8 @@ Rails.application.routes.draw do
   # Static content
   get "getting-started" => "pages#getting_started"
   get "getting-started.md" => "pages#getting_started_md"
+  get "SKILL.md" => "pages#skill_md"
+  get "skill.md" => "pages#skill_md"
 
   # Web UI
   root "home#index"
