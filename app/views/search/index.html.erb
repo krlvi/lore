@@ -1,0 +1,54 @@
+<h1>Search repos</h1>
+
+<%= form_tag search_path, method: :get, class: "search-big", style: "margin: 24px 0;" do %>
+  <%= text_field_tag :q, @query, placeholder: 'e.g. "send slack notification"', autocomplete: "off" %>
+  <button type="submit">Search</button>
+<% end %>
+
+<% if @query.present? %>
+  <p style="margin-bottom: 16px; color: #8b949e;">
+    <% if @results.any? %>
+      <%= @results.size %> results for <strong style="color: #c9d1d9;">"<%= @query %>"</strong>
+    <% else %>
+      No results for "<%= @query %>"
+    <% end %>
+  </p>
+
+  <% @results.each_with_index do |result, i| %>
+    <% repo = result[:repo]; score = result[:score] %>
+    <div class="repo-card">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+        <h3>
+          <span style="color: #8b949e; font-size: 14px; margin-right: 4px;"><%= i + 1 %>.</span>
+          <a href="/<%= repo.owner %>/<%= repo.name %>"><%= repo.owner %>/<%= repo.name %></a>
+        </h3>
+        <span class="score-badge"><%= "%.0f%%" % (score * 100) %> match</span>
+      </div>
+      <p class="desc"><%= repo.description %></p>
+      <div style="margin-bottom: 8px;">
+        <% repo.tags_array.each do |tag| %>
+          <span class="tag"><%= tag %></span>
+        <% end %>
+      </div>
+      <div class="meta">
+        <span class="stars">★ <%= repo.stars_count %></span>
+        <% if repo.last_pushed_at %>
+          <span>pushed <%= time_ago_in_words(repo.last_pushed_at) %> ago</span>
+        <% end %>
+        <code style="font-size: 11px;">lore clone <%= repo.owner %>/<%= repo.name %></code>
+      </div>
+    </div>
+  <% end %>
+<% else %>
+  <p>Enter a search query to find repos. Search is semantic — use natural language.</p>
+  <div style="margin-top: 24px;">
+    <p style="margin-bottom: 8px;"><strong style="color: #f0f6fc;">Try:</strong></p>
+    <ul style="list-style: none; padding: 0;">
+      <% ["send slack notification", "send email", "fetch url", "summarize git history"].each do |q| %>
+        <li style="margin-bottom: 8px;">
+          <a href="<%= search_path(q: q) %>">🔍 "<%= q %>"</a>
+        </li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>

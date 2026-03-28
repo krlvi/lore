@@ -39,4 +39,7 @@ Rails.application.configure do
 
   # Raise error when a before_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true
+
+  # Use a test-specific repo root that gets cleaned between runs
+  config.lore_repo_root = Rails.root.join("tmp", "test_repos").to_s
 end

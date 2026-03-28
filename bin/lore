@@ -1,0 +1,244 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "json"
+require "net/http"
+require "uri"
+require "fileutils"
+require "optparse"
+
+# Lore CLI - thin wrapper around the Lore API + git
+CONFIG_FILE = File.expand_path("~/.lore/config")
+DEFAULT_URL = "http://localhost:3000"
+
+def config
+  @config ||= if File.exist?(CONFIG_FILE)
+    JSON.parse(File.read(CONFIG_FILE))
+  else
+    {}
+  end
+end
+
+def save_config(data)
+  FileUtils.mkdir_p(File.dirname(CONFIG_FILE))
+  File.write(CONFIG_FILE, JSON.pretty_generate(data))
+  File.chmod(0o600, CONFIG_FILE)
+end
+
+def base_url
+  config["url"] || ENV.fetch("LORE_URL", DEFAULT_URL)
+end
+
+def token
+  config["token"] || ENV["LORE_TOKEN"]
+end
+
+def api_request(method, path, body: nil, auth: false)
+  uri = URI.parse("#{base_url}#{path}")
+  http = Net::HTTP.new(uri.host, uri.port)
+
+  req = case method
+        when :get    then Net::HTTP::Get.new(uri)
+        when :post   then Net::HTTP::Post.new(uri)
+        when :delete then Net::HTTP::Delete.new(uri)
+        end
+
+  req["Content-Type"] = "application/json"
+  req["Accept"]       = "application/json"
+
+  if auth
+    t = token
+    abort "Not logged in. Run: lore register" unless t
+    req["Authorization"] = "Bearer #{t}"
+  end
+
+  req.body = body.to_json if body
+
+  resp = http.request(req)
+  begin
+    data = JSON.parse(resp.body)
+  rescue
+    data = { "raw" => resp.body }
+  end
+
+  [ resp.code.to_i, data ]
+rescue Errno::ECONNREFUSED
+  abort "Cannot connect to Lore server at #{base_url}. Is it running?"
+end
+
+# --- Commands ---
+
+def cmd_register(args)
+  opts = {}
+  OptionParser.new do |o|
+    o.on("--username U") { |v| opts[:username] = v }
+    o.on("--email E")    { |v| opts[:email] = v }
+    o.on("--url URL")    { |v| opts[:url] = v }
+  end.parse!(args)
+
+  opts[:username] ||= begin
+    print "Username: "; $stdout.flush; $stdin.gets.chomp
+  end
+  opts[:email] ||= begin
+    print "Email: "; $stdout.flush; $stdin.gets.chomp
+  end
+
+  url = opts.delete(:url) || DEFAULT_URL
+
+  code, data = api_request(:post, "/api/v1/users",
+    body: { user: { username: opts[:username], email: opts[:email] } })
+
+  if code == 201
+    cfg = config.merge(
+      "url"      => url,
+      "username" => data["username"],
+      "token"    => data["token"]
+    )
+    save_config(cfg)
+
+    # Set git identity
+    system("git config --global user.name #{Shellwords.escape(opts[:username])}")
+
+    puts "✓ Registered as #{data["username"]}"
+    puts "✓ Token saved to #{CONFIG_FILE}"
+    puts "  Clone URL pattern: #{url}/git/#{data["username"]}/<repo>.git"
+  else
+    $stderr.puts "Registration failed: #{data["errors"]&.join(", ") || data["error"]}"
+    exit 1
+  end
+end
+
+def cmd_whoami(_args)
+  code, data = api_request(:get, "/api/v1/whoami", auth: true)
+  if code == 200
+    puts "Logged in as: #{data["username"]} (#{data["email"]})"
+  else
+    puts "Not authenticated"
+    exit 1
+  end
+end
+
+def cmd_search(args)
+  query = args.join(" ").strip
+  abort "Usage: lore search <query>" if query.empty?
+
+  code, data = api_request(:get, "/api/v1/repos/search?q=#{URI.encode_www_form_component(query)}&limit=10")
+
+  if code != 200
+    abort "Search failed: #{data["error"]}"
+  end
+
+  results = data["results"] || []
+  if results.empty?
+    puts "No results found for \"#{query}\""
+    return
+  end
+
+  puts "Results for \"#{query}\":"
+  puts
+  results.each_with_index do |r, i|
+    score_pct = (r["similarity"].to_f * 100).round(1)
+    stars     = r["stars_count"] || 0
+    tags      = (r["tags"] || []).join(", ")
+    desc      = r["description"] || ""
+    puts "#{i + 1}. #{r["owner"]}/#{r["name"]}  ★#{stars}  (#{score_pct}% match)"
+    puts "   #{desc}"
+    puts "   tags: #{tags}" if tags.length > 0
+    puts "   clone: #{r["clone_url"]}"
+    puts
+  end
+end
+
+def cmd_clone(args)
+  repo_path = args.first
+  abort "Usage: lore clone <owner>/<name>" unless repo_path&.include?("/")
+
+  owner, name = repo_path.split("/", 2)
+
+  # Star it if authenticated
+  if token
+    api_request(:post, "/api/v1/repos/#{owner}/#{name}/star", auth: true)
+  end
+
+  # Get clone URL
+  code, data = api_request(:get, "/api/v1/repos/#{owner}/#{name}")
+  if code != 200
+    abort "Repo not found: #{owner}/#{name}"
+  end
+
+  clone_url = data["clone_url"]
+  puts "Cloning #{owner}/#{name}..."
+  system("git clone #{Shellwords.escape(clone_url)}")
+end
+
+def cmd_publish(args)
+  opts = {}
+  OptionParser.new do |o|
+    o.on("--name N")        { |v| opts[:name] = v }
+    o.on("--description D") { |v| opts[:description] = v }
+    o.on("--tags T")        { |v| opts[:tags] = v }
+  end.parse!(args)
+
+  opts[:name] ||= File.basename(Dir.pwd)
+
+  code, data = api_request(:post, "/api/v1/repos",
+    body: {
+      name:        opts[:name],
+      description: opts[:description],
+      tags:        opts[:tags]&.split(",")
+    },
+    auth: true)
+
+  if code == 201
+    clone_url = data["clone_url"]
+    puts "✓ Created #{data["owner"]}/#{data["name"]}"
+    puts "  Push with:"
+    puts "    git remote add lore #{clone_url}"
+    puts "    git push lore main"
+
+    # Auto-add remote if in a git repo
+    if system("git rev-parse --git-dir > /dev/null 2>&1")
+      system("git remote remove lore 2>/dev/null; git remote add lore #{Shellwords.escape(clone_url)}")
+      puts "  (Remote 'lore' configured)"
+    end
+  else
+    $stderr.puts "Failed: #{data["errors"]&.join(", ") || data["error"]}"
+    exit 1
+  end
+end
+
+def cmd_push(_args)
+  system("git push lore main") || exit($?.exitstatus)
+end
+
+# --- Dispatch ---
+
+require "shellwords"
+
+command = ARGV.shift
+case command
+when "register" then cmd_register(ARGV)
+when "whoami"   then cmd_whoami(ARGV)
+when "search"   then cmd_search(ARGV)
+when "clone"    then cmd_clone(ARGV)
+when "publish"  then cmd_publish(ARGV)
+when "push"     then cmd_push(ARGV)
+when nil, "help", "--help", "-h"
+  puts <<~HELP
+    Lore CLI
+
+    Usage: lore <command> [options]
+
+    Commands:
+      register    Create an account and save credentials
+      whoami      Show current user
+      search      Search repos: lore search "query"
+      clone       Clone and star a repo: lore clone owner/name
+      publish     Publish current directory as a new repo
+      push        Push to the lore remote
+      help        Show this help
+  HELP
+else
+  $stderr.puts "Unknown command: #{command}"
+  exit 1
+end

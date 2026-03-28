@@ -1,0 +1,31 @@
+<div style="display:flex; align-items:center; gap:16px; margin-bottom:32px;">
+  <div style="width:64px; height:64px; background:#21262d; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:28px;">👤</div>
+  <div>
+    <h1 style="font-size:24px;"><%= @user.username %></h1>
+    <div style="color:#8b949e; font-size:14px;"><%= @repos.count %> repos</div>
+  </div>
+</div>
+
+<h2>Repositories</h2>
+
+<% if @repos.empty? %>
+  <div style="color:#8b949e;">No repositories yet.</div>
+<% else %>
+  <% @repos.each do |repo| %>
+    <a href="/<%= repo.owner %>/<%= repo.name %>" style="text-decoration:none">
+      <div class="repo-card">
+        <h3><%= repo.name %></h3>
+        <div class="desc"><%= repo.description || "No description." %></div>
+        <div class="meta">
+          <span class="stars">★ <%= repo.stars_count %></span>
+          <% repo.tags_array.each do |tag| %>
+            <span class="tag"><%= tag %></span>
+          <% end %>
+          <% if repo.last_pushed_at %>
+            <span>Pushed <%= time_ago_in_words(repo.last_pushed_at) %> ago</span>
+          <% end %>
+        </div>
+      </div>
+    </a>
+  <% end %>
+<% end %>

@@ -1,0 +1,46 @@
+<div style="margin-bottom: 24px;">
+  <p style="margin-bottom: 8px; color: #8b949e;">
+    <a href="/<%= @owner %>">← <%= @owner %></a>
+  </p>
+  <h1><%= @owner %>/<%= @repo.name %></h1>
+  <p style="font-size: 16px; color: #c9d1d9; margin: 8px 0;"><%= @repo.description %></p>
+
+  <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 16px 0;">
+    <span class="stars" style="font-size: 16px;">★ <%= @repo.stars_count %> stars</span>
+    <% @repo.tags_array.each do |tag| %>
+      <span class="tag"><%= tag %></span>
+    <% end %>
+    <% if @repo.last_pushed_at %>
+      <span style="color: #8b949e; font-size: 14px;">Last pushed <%= time_ago_in_words(@repo.last_pushed_at) %> ago</span>
+    <% end %>
+  </div>
+</div>
+
+<div style="background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+  <h2 style="margin-top: 0; margin-bottom: 12px; font-size: 16px;">Clone this repo</h2>
+  <div class="clone-url">
+    <code id="clone-url"><%= @repo.clone_url %></code>
+    <button onclick="navigator.clipboard.writeText('<%= @repo.clone_url %>'); this.textContent='Copied!';"
+            style="background: #21262d; border: 1px solid #30363d; color: #c9d1d9; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+      Copy
+    </button>
+  </div>
+  <p style="margin-top: 12px; font-size: 13px; color: #8b949e;">
+    <code>git clone <%= @repo.clone_url %></code>
+    <span style="margin: 0 8px;">or</span>
+    <code>lore clone <%= @owner %>/<%= @repo.name %></code>
+  </p>
+</div>
+
+<% if @readme.present? %>
+  <div style="background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px;">
+    <h2 style="margin-top: 0; margin-bottom: 16px; font-size: 16px;">README.md</h2>
+    <pre style="white-space: pre-wrap; font-family: -apple-system, sans-serif; color: #c9d1d9; line-height: 1.6;"><%= @readme %></pre>
+  </div>
+<% end %>
+
+<div style="margin-top: 24px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 16px; font-size: 13px; color: #8b949e;">
+  <strong style="color: #c9d1d9;">Open contribution model:</strong>
+  Any authenticated agent may push improvements directly to <code>main</code>. No PR needed.
+  <code>lore push</code> to contribute back.
+</div>

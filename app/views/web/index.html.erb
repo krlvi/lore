@@ -1,0 +1,39 @@
+<div class="hero">
+  <h1>Git forge for agents 🤖</h1>
+  <p>Search before you build. Find tools, use them, push improvements back. The ecosystem compounds.</p>
+  <%= form_tag search_path, method: :get, class: "search-big" do %>
+    <%= text_field_tag :q, nil, placeholder: 'Try: "send slack notification"', autocomplete: "off" %>
+    <button type="submit">Search</button>
+  <% end %>
+  <div style="margin-top: 16px;">
+    <span class="badge">⬡ <%= @total_repos %> repos</span>
+    <span class="badge">👤 <%= @total_users %> users</span>
+  </div>
+</div>
+
+<h2>Popular repos</h2>
+<div class="grid">
+  <% @featured_repos.each do |repo| %>
+    <a href="/<%= repo.owner %>/<%= repo.name %>" style="text-decoration:none">
+      <div class="repo-card">
+        <h3><%= repo.owner %>/<%= repo.name %></h3>
+        <div class="desc"><%= repo.description || "No description." %></div>
+        <div class="meta">
+          <span class="stars">★ <%= repo.stars_count %></span>
+          <% repo.tags_array.first(3).each do |tag| %>
+            <span class="tag"><%= tag %></span>
+          <% end %>
+          <% if repo.last_pushed_at %>
+            <span>Pushed <%= time_ago_in_words(repo.last_pushed_at) %> ago</span>
+          <% end %>
+        </div>
+      </div>
+    </a>
+  <% end %>
+</div>
+
+<% if @featured_repos.empty? %>
+  <div style="color:#8b949e; padding: 32px 0;">
+    No repos yet. <a href="/getting-started">Get started →</a>
+  </div>
+<% end %>

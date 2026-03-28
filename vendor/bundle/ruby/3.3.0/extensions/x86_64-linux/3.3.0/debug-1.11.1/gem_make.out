@@ -1,0 +1,19 @@
+current directory: /home/kiril/src/lore/vendor/bundle/ruby/3.3.0/gems/debug-1.11.1/ext/debug
+/home/kiril/.rbenv/versions/3.3.6/bin/ruby extconf.rb
+creating Makefile
+
+current directory: /home/kiril/src/lore/vendor/bundle/ruby/3.3.0/gems/debug-1.11.1/ext/debug
+make DESTDIR\= sitearchdir\=./.gem.20260328-263112-5pqmd2 sitelibdir\=./.gem.20260328-263112-5pqmd2 clean
+
+current directory: /home/kiril/src/lore/vendor/bundle/ruby/3.3.0/gems/debug-1.11.1/ext/debug
+make DESTDIR\= sitearchdir\=./.gem.20260328-263112-5pqmd2 sitelibdir\=./.gem.20260328-263112-5pqmd2
+compiling debug.c
+compiling iseq_collector.c
+linking shared-object debug/debug.so
+
+current directory: /home/kiril/src/lore/vendor/bundle/ruby/3.3.0/gems/debug-1.11.1/ext/debug
+make DESTDIR\= sitearchdir\=./.gem.20260328-263112-5pqmd2 sitelibdir\=./.gem.20260328-263112-5pqmd2 install
+/usr/bin/install -c -m 0755 debug.so ./.gem.20260328-263112-5pqmd2/debug
+
+current directory: /home/kiril/src/lore/vendor/bundle/ruby/3.3.0/gems/debug-1.11.1/ext/debug
+make DESTDIR\= sitearchdir\=./.gem.20260328-263112-5pqmd2 sitelibdir\=./.gem.20260328-263112-5pqmd2 clean

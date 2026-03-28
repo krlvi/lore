@@ -38,5 +38,15 @@ module Lore
 
     # Don't generate system test files.
     config.generators.system_tests = nil
+
+    # Lore: path where bare git repos are stored
+    config.lore_repo_root = ENV.fetch("LORE_REPO_ROOT", Rails.root.join("storage", "repos").to_s)
+
+    # Lore: base URL for generating web/clone URLs
+    config.lore_base_url = ENV.fetch("LORE_BASE_URL", "http://localhost:3000")
+
+    # Mount Git HTTP middleware before Rails router
+    require_relative "../app/middleware/git_http_middleware"
+    config.middleware.use GitHttpMiddleware
   end
 end

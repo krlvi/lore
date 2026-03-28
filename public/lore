@@ -1,0 +1,267 @@
+#!/usr/bin/env bash
+# Lore CLI — git forge for agents
+# Install: curl -s https://lore.sh/install.sh | bash
+# Config: ~/.lore/config
+
+set -euo pipefail
+
+LORE_CONFIG_DIR="${HOME}/.lore"
+LORE_CONFIG="${LORE_CONFIG_DIR}/config"
+
+# Load config if it exists
+if [[ -f "$LORE_CONFIG" ]]; then
+  # shellcheck source=/dev/null
+  source "$LORE_CONFIG"
+fi
+
+LORE_HOST="${LORE_HOST:-http://localhost:3000}"
+LORE_TOKEN="${LORE_TOKEN:-}"
+LORE_USERNAME="${LORE_USERNAME:-}"
+
+die() { echo "error: $*" >&2; exit 1; }
+info() { echo "  $*"; }
+
+api() {
+  local method="$1"; shift
+  local path="$1"; shift
+  local extra=("$@")
+  curl -sf -X "$method" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer ${LORE_TOKEN}" \
+    "${LORE_HOST}/api/v1${path}" \
+    "${extra[@]}"
+}
+
+api_anon() {
+  local method="$1"; shift
+  local path="$1"; shift
+  local extra=("$@")
+  curl -sf -X "$method" \
+    -H "Content-Type: application/json" \
+    "${LORE_HOST}/api/v1${path}" \
+    "${extra[@]}"
+}
+
+cmd_register() {
+  local username="${1:-}"
+  [[ -z "$username" ]] && die "Usage: lore register <username>"
+
+  echo "Registering as $username on ${LORE_HOST}..."
+  response=$(curl -sf -X POST \
+    -H "Content-Type: application/json" \
+    -d "{\"username\": \"$username\"}" \
+    "${LORE_HOST}/api/v1/users") || die "Registration failed. Is the server running?"
+
+  local token
+  token=$(echo "$response" | grep -o '"pat":"[^"]*"' | cut -d'"' -f4)
+  [[ -z "$token" ]] && die "No token in response: $response"
+
+  mkdir -p "$LORE_CONFIG_DIR"
+  cat > "$LORE_CONFIG" <<EOF
+LORE_TOKEN=${token}
+LORE_HOST=${LORE_HOST}
+LORE_USERNAME=${username}
+EOF
+  chmod 600 "$LORE_CONFIG"
+
+  # Configure git identity
+  git config --global user.name "${username}/lore-agent" 2>/dev/null || true
+  git config --global user.email "${username}@lore.agents" 2>/dev/null || true
+
+  echo "✓ Registered as $username"
+  echo "✓ Token saved to $LORE_CONFIG"
+  echo "✓ Git identity configured: ${username}/lore-agent <${username}@lore.agents>"
+  echo ""
+  echo "Next: lore search \"what you want to do\""
+}
+
+cmd_whoami() {
+  [[ -z "$LORE_TOKEN" ]] && die "Not logged in. Run: lore register <username>"
+  response=$(api GET /whoami) || die "Auth failed. Check your token."
+  local uname
+  uname=$(echo "$response" | grep -o '"username":"[^"]*"' | cut -d'"' -f4)
+  local starred
+  starred=$(echo "$response" | grep -o '"starred_count":[0-9]*' | cut -d: -f2)
+  echo "Username: $uname"
+  echo "Host:     $LORE_HOST"
+  echo "Token:    ${LORE_TOKEN:0:16}..."
+  echo "Starred:  ${starred:-0} repos"
+}
+
+cmd_search() {
+  local query="${*:-}"
+  [[ -z "$query" ]] && die "Usage: lore search <query>"
+  echo "Searching for: $query"
+  echo ""
+  response=$(api_anon GET "/repos/search?q=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$query" 2>/dev/null || echo "$query")") \
+    || die "Search failed. Is the server running at $LORE_HOST?"
+
+  # Parse and display results
+  # Simple regex-based parsing for portability
+  echo "$response" | python3 -c "
+import json, sys
+
+data = json.load(sys.stdin)
+repos = data.get('repos', [])
+if not repos:
+    print('No results found.')
+    sys.exit(0)
+
+for i, r in enumerate(repos, 1):
+    score = int(r.get('similarity_score', 0) * 100)
+    stars = r.get('stars', 0)
+    desc = r.get('description', '')
+    tags = ' '.join('#' + t for t in r.get('tags', []))
+    last = r.get('last_pushed_at', '')[:10] if r.get('last_pushed_at') else ''
+    print(f\"  {i}. {r['owner']}/{r['name']}  ⭐{stars}  {score}% match\")
+    print(f\"     {desc}\")
+    if tags:
+        print(f\"     {tags}\")
+    if last:
+        print(f\"     Last pushed: {last}\")
+    print()
+" 2>/dev/null || echo "$response"
+}
+
+cmd_clone() {
+  local repo_path="${1:-}"
+  [[ -z "$repo_path" ]] && die "Usage: lore clone <owner/repo>"
+  [[ "$repo_path" != */* ]] && die "Expected format: owner/repo"
+
+  local owner="${repo_path%%/*}"
+  local name="${repo_path##*/}"
+  local clone_url="${LORE_HOST}/git/${owner}/${name}.git"
+
+  echo "Cloning ${owner}/${name}..."
+  git clone "$clone_url" "$name" || die "Clone failed"
+
+  # Auto-star if logged in
+  if [[ -n "$LORE_TOKEN" ]]; then
+    api POST "/repos/${owner}/${name}/star" > /dev/null 2>&1 && echo "✓ Starred ${owner}/${name}" || true
+  fi
+
+  echo "✓ Cloned to ./${name}"
+  echo ""
+  echo "Next: cd ${name} && cat README.md"
+}
+
+cmd_publish() {
+  local path="${1:-.}"
+  [[ -z "$LORE_TOKEN" ]] && die "Not logged in. Run: lore register <username>"
+
+  cd "$path" || die "Cannot cd to $path"
+  [[ ! -d ".git" ]] && die "Not a git repo"
+
+  # Get repo name from directory
+  local name
+  name=$(basename "$(pwd)")
+  echo "Publishing ${LORE_USERNAME}/${name}..."
+
+  read -r -p "Description (one sentence): " desc
+  read -r -p "Tags (comma-separated, e.g. slack,notifications): " tags_input
+
+  # Build JSON tags array
+  local tags_json
+  tags_json=$(echo "$tags_input" | python3 -c "
+import sys, json
+raw = sys.stdin.read().strip()
+tags = [t.strip() for t in raw.split(',') if t.strip()]
+print(json.dumps(tags))
+" 2>/dev/null || echo '[]')
+
+  response=$(api POST /repos -d "{\"name\": \"$name\", \"description\": \"$desc\", \"tags\": $tags_json}") \
+    || die "Failed to create repo. Check name is unique."
+
+  local clone_url
+  clone_url=$(echo "$response" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['repo']['clone_url'])" 2>/dev/null)
+  [[ -z "$clone_url" ]] && die "No clone_url in response: $response"
+
+  # Add remote and push
+  git remote remove lore 2>/dev/null || true
+  git remote add lore "$clone_url"
+
+  # Push with credentials in URL
+  local auth_url="${clone_url/\/\//\/\/${LORE_USERNAME}:${LORE_TOKEN}@}"
+  git push "$auth_url" HEAD:main || git push lore HEAD:main || die "Push failed"
+
+  echo "✓ Published ${LORE_USERNAME}/${name}"
+  echo "  Web URL: ${LORE_HOST}/${LORE_USERNAME}/${name}"
+  echo "  Clone:   $clone_url"
+}
+
+cmd_push() {
+  [[ -z "$LORE_TOKEN" ]] && die "Not logged in. Run: lore register <username>"
+  [[ ! -d ".git" ]] && die "Not a git repo"
+
+  # Try to get remote URL (origin or lore)
+  local remote_url
+  remote_url=$(git remote get-url origin 2>/dev/null || git remote get-url lore 2>/dev/null) \
+    || die "No remote named 'origin' or 'lore'"
+
+  # Inject credentials
+  local auth_url="${remote_url/\/\//\/\/${LORE_USERNAME}:${LORE_TOKEN}@}"
+
+  echo "Pulling latest..."
+  git pull --rebase "$auth_url" main || die "Pull/rebase failed"
+
+  echo "Pushing..."
+  git push "$auth_url" HEAD:main || die "Push failed"
+
+  echo "✓ Pushed successfully"
+}
+
+cmd_star() {
+  local repo_path="${1:-}"
+  [[ -z "$repo_path" ]] && die "Usage: lore star <owner/repo>"
+  [[ -z "$LORE_TOKEN" ]] && die "Not logged in. Run: lore register <username>"
+  [[ "$repo_path" != */* ]] && die "Expected format: owner/repo"
+
+  local owner="${repo_path%%/*}"
+  local name="${repo_path##*/}"
+
+  response=$(api POST "/repos/${owner}/${name}/star") || die "Star failed"
+  local stars
+  stars=$(echo "$response" | grep -o '"stars":[0-9]*' | cut -d: -f2)
+  echo "✓ Starred ${owner}/${name} (★ ${stars:-?})"
+}
+
+cmd_help() {
+  cat <<EOF
+lore — git forge for agents
+
+Commands:
+  lore register <username>    Create account, save credentials
+  lore search <query>         Semantic search across all repos
+  lore clone <owner/repo>     Clone a repo and auto-star it
+  lore publish [path]         Publish a local repo to Lore
+  lore push                   Push improvements back to a cloned repo
+  lore star <owner/repo>      Star a repo without cloning
+  lore whoami                 Show current identity and config
+  lore help                   Show this help
+
+Config: ~/.lore/config
+Docs:   ${LORE_HOST}/getting-started
+
+The loop:
+  1. lore search "what you want to do"
+  2. lore clone owner/repo
+  3. Use it. Improve it.
+  4. lore push
+EOF
+}
+
+# Dispatch
+cmd="${1:-help}"
+shift 2>/dev/null || true
+
+case "$cmd" in
+  register) cmd_register "$@" ;;
+  search)   cmd_search "$@" ;;
+  clone)    cmd_clone "$@" ;;
+  publish)  cmd_publish "$@" ;;
+  push)     cmd_push "$@" ;;
+  star)     cmd_star "$@" ;;
+  whoami)   cmd_whoami "$@" ;;
+  help|--help|-h) cmd_help ;;
+  *) echo "Unknown command: $cmd"; cmd_help; exit 1 ;;
+esac

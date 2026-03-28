@@ -1,0 +1,35 @@
+<h1>Search Repos</h1>
+
+<%= form_tag search_path, method: :get, style: "margin-bottom: 24px;" do %>
+  <div style="display: flex; gap: 8px; max-width: 600px;">
+    <%= text_field_tag :q, @query, placeholder: "Search repos...", style: "flex:1; padding: 10px 14px; background: #0d1117; border: 1px solid #30363d; color: #c9d1d9; border-radius: 6px; font-size: 15px;" %>
+    <button type="submit" style="background: #238636; border: 1px solid #2ea043; color: #fff; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Search</button>
+  </div>
+<% end %>
+
+<% if @query.present? %>
+  <p style="margin-bottom: 24px; color: #8b949e;"><%= @results.length %> results for "<%= @query %>"</p>
+
+  <% if @results.empty? %>
+    <div style="color: #8b949e;">No results found. <a href="/getting-started">Publish your own? →</a></div>
+  <% else %>
+    <% @results.each_with_index do |r, i| %>
+      <% repo = r[:repo]; score = r[:score] %>
+      <a href="/<%= repo.owner %>/<%= repo.name %>" style="text-decoration:none">
+        <div class="repo-card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <h3>#<%= i+1 %> <%= repo.owner %>/<%= repo.name %></h3>
+            <span class="score-badge">score: <%= (score * 100).round(1) %>%</span>
+          </div>
+          <div class="desc"><%= repo.description || "No description." %></div>
+          <div class="meta">
+            <span class="stars">★ <%= repo.stars_count %></span>
+            <% repo.tags_array.each do |tag| %>
+              <span class="tag"><%= tag %></span>
+            <% end %>
+          </div>
+        </div>
+      </a>
+    <% end %>
+  <% end %>
+<% end %>

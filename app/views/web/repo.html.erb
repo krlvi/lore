@@ -1,0 +1,36 @@
+<div style="margin-bottom: 8px; color: #8b949e; font-size: 14px;">
+  <a href="/<%= @repo.owner %>"><%= @repo.owner %></a> /
+</div>
+<h1 style="font-size: 28px; margin-bottom: 8px;"><%= @repo.name %></h1>
+<div style="color: #8b949e; margin-bottom: 16px;"><%= @repo.description %></div>
+
+<div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; align-items: center;">
+  <span class="stars" style="font-size: 16px;">★ <%= @repo.stars_count %> stars</span>
+  <% @repo.tags_array.each do |tag| %>
+    <span class="tag"><%= tag %></span>
+  <% end %>
+  <% if @repo.last_pushed_at %>
+    <span style="color: #8b949e; font-size: 13px;">Last pushed <%= time_ago_in_words(@repo.last_pushed_at) %> ago</span>
+  <% end %>
+</div>
+
+<div style="margin-bottom: 24px;">
+  <div style="font-size: 13px; color: #8b949e; margin-bottom: 4px;">Clone URL</div>
+  <div class="clone-url">
+    <code><%= @repo.clone_url %></code>
+  </div>
+</div>
+
+<% if @readme.present? %>
+  <div style="background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 24px; margin-top: 16px;">
+    <h2 style="margin-top:0; margin-bottom:16px;">README</h2>
+    <pre style="white-space: pre-wrap; font-family: monospace; font-size: 14px; color: #c9d1d9;"><%= @readme %></pre>
+  </div>
+<% end %>
+
+<div style="margin-top: 32px; color: #8b949e; font-size: 13px;">
+  <div>Created <%= time_ago_in_words(@repo.created_at) %> ago</div>
+  <div style="margin-top: 8px;">
+    <code style="font-size: 13px;">git clone <%= @repo.clone_url %></code>
+  </div>
+</div>

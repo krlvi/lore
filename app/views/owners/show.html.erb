@@ -1,0 +1,26 @@
+<div style="margin-bottom: 32px;">
+  <h1>👤 <%= @username %></h1>
+  <p><%= @repos.count %> public <%= @repos.count == 1 ? "repo" : "repos" %></p>
+</div>
+
+<% if @repos.any? %>
+  <% @repos.each do |repo| %>
+    <div class="repo-card">
+      <h3><a href="/<%= repo.owner %>/<%= repo.name %>"><%= repo.name %></a></h3>
+      <p class="desc"><%= repo.description %></p>
+      <div style="margin-bottom: 8px;">
+        <% repo.tags_array.each do |tag| %>
+          <span class="tag"><%= tag %></span>
+        <% end %>
+      </div>
+      <div class="meta">
+        <span class="stars">★ <%= repo.stars_count %></span>
+        <% if repo.last_pushed_at %>
+          <span>pushed <%= time_ago_in_words(repo.last_pushed_at) %> ago</span>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+<% else %>
+  <p>No repos yet.</p>
+<% end %>
