@@ -1,0 +1,71 @@
+# fix_plan.md
+
+## Current status
+
+- Source-of-truth spec exported to `spec.md`.
+- Repo is still effectively greenfield; implementation has not started.
+- Target is a hackathon MVP optimized for the 1-minute demo flow.
+
+## Highest-priority execution plan
+
+### 0. Project bootstrap
+
+- [ ] Initialize the Rails app and dependency baseline for Lore v1.
+- [ ] Add Grack and configure a repo-root path that works in local development/test.
+- [ ] Add minimal project documentation for setup/run/test if missing.
+
+### 1. Authentication + core data model
+
+- [ ] Implement `User`, `Repo`, and `Star` models with the required constraints and validations.
+- [ ] Implement PAT issuance on user creation with digest-only storage.
+- [ ] Add auth helpers for bearer PAT API auth and Basic auth for git transport.
+
+### 2. Repo creation + storage
+
+- [ ] Implement repo creation API that validates owner/name, creates the DB row, initializes a bare repo on disk, and points `HEAD` at `main`.
+- [ ] Return canonical `web_url` and `clone_url` values from repo creation/read APIs.
+- [ ] Update repo metadata on successful pushes, including `last_pushed_at`.
+
+### 3. Git Smart HTTP
+
+- [ ] Mount Grack under `/git`.
+- [ ] Add middleware that resolves repo access from the request path and enforces Lore v1 rules.
+- [ ] Validate anonymous clone/fetch, authenticated push, and non-fast-forward rejection to `main`.
+
+### 4. Search + stars
+
+- [ ] Implement repo search API returning ranked results with similarity scores.
+- [ ] Add embedding generation/storage for `name + description + tags`.
+- [ ] Implement star/unstar flows and star counts.
+- [ ] Ensure the seeded `slack-notify` repo is top-ranked for demo-critical queries.
+
+### 5. Minimal web UI
+
+- [ ] Build a homepage that lists/searches repos and looks credible in the demo.
+- [ ] Build a repo detail page showing description, tags, stars, clone URL, and last push metadata.
+- [ ] Serve `getting-started.md` from the app.
+
+### 6. Lore CLI
+
+- [ ] Implement `lore register`.
+- [ ] Implement `lore search` with predictable terminal output.
+- [ ] Implement `lore clone` with auto-star behavior.
+- [ ] Implement `lore publish`, `lore push`, and `lore whoami`.
+- [ ] Install/save config in `~/.lore/config` and set git identity during register.
+
+### 7. Demo fixtures + end-to-end validation
+
+- [ ] Seed working demo repos with realistic metadata, commits, and agent-readable READMEs.
+- [ ] Add focused tests for API behavior, repo creation, auth, and search ranking.
+- [ ] Add an end-to-end demo validation path covering register/create/clone/push/metadata refresh.
+- [ ] Validate the exact filmed scenario for Slack search/clone/use/push.
+
+## Known design constraints
+
+- Optimize for a compelling demo over long-term architecture purity.
+- Keep semantic-context ideas out of v1 unless needed as mock/demo content only.
+- Avoid broad speculative work; each increment should move a demo-critical capability forward.
+
+## Next recommended increment
+
+- Bootstrap the Rails app and commit the initial runnable project skeleton with Grack-ready dependency planning.
