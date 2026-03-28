@@ -2,9 +2,10 @@
 
 ## Current status
 
-- Full MVP implementation complete. Tests pass (26 runs, 0 failures).
+- Full MVP COMPLETE. All tasks checked off. 29 tests, 75 assertions, 0 failures.
 - Rails app running with Grack, API, web UI, CLI, and seed data.
 - `slack-notify` ranks #1 for demo query "send slack notification".
+- End-to-end demo validation passes (script/validate_demo.rb).
 
 ## Highest-priority execution plan
 
@@ -59,8 +60,8 @@
 
 - [x] Seed working demo repos with realistic metadata, commits, and agent-readable READMEs.
 - [x] Add focused tests for API behavior, repo creation, auth, and search ranking.
-- [ ] Add an end-to-end demo validation path covering register/create/clone/push/metadata refresh.
-- [ ] Validate the exact filmed scenario for Slack search/clone/use/push.
+- [x] Add an end-to-end demo validation path covering register/create/clone/push/metadata refresh.
+- [x] Validate the exact filmed scenario for Slack search/clone/use/push.
 
 ## Known design constraints
 
