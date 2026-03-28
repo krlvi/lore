@@ -10,7 +10,7 @@
 
 ### 0. Project bootstrap
 
-- [ ] Initialize the Rails app and dependency baseline for Lore v1.
+- [x] Initialize the Rails app and dependency baseline for Lore v1. (Rails 8.1.3, sqlite3, grack, bcrypt, minitest configured)
 - [ ] Add Grack and configure a repo-root path that works in local development/test.
 - [ ] Add minimal project documentation for setup/run/test if missing.
 
