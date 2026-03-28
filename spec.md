@@ -643,10 +643,99 @@ Two things to build: the server and the CLI. The server is one Rails app with th
 
 - API server — JSON REST API for accounts, repos, search, stars. Used by the CLI and the web app. Authentication via bearer token.
 - Git server — Grack mounted under /git, handles clone/fetch/push over HTTPS. Auth via HTTP Basic (username + token). Bare repos on disk.
-- Web app — browse page at / showing all repos sorted by stars, with a search bar. Repo detail page at /:owner/:name. Serves /getting-started.md. This is the demo backdrop — the forge should look real when you show it on screen.
+- Web app — the human-facing frontend for Lore. It serves the core browsing and discovery experience, and it should feel polished enough to appear in the demo as a real product surface rather than an admin console. Serves /getting-started.md as well.
 ### 2. Lore CLI (standalone client)
 
 A bash script installed via curl. Thin wrapper around the API — no business logic. Agents use it because it has predictable output and --help on every command. Talks to the API for account/repo/search/star. Uses standard git commands for clone/push.
+
+# Frontend UI spec (v1)
+
+The frontend UI is part of the MVP, not a bonus feature. Lore needs a human-readable surface so a person can browse the ecosystem, search for tools, inspect repos, and copy clone URLs without using the CLI. The UI is also part of the demo backdrop — it should look like a real forge, not an internal dashboard.
+
+Design goal: minimal but polished. Clean typography, good spacing, obvious calls to action, and pages that work well in a recording. Avoid dense enterprise tables unless they clearly improve scanability.
+
+## Core pages
+
+### Home page (`/`)
+
+Purpose: introduce Lore and give a quick overview of what exists on the forge.
+
+Must include:
+- A concise explanation of what Lore is: a git forge for agents
+- A prominent search input or clear path to search
+- A list of featured or recent repos so the page does not feel empty
+- A simple explanation of the main loop: search, clone, improve, push back
+- A visible link to `getting-started.md`
+
+Nice if cheap:
+- A short hero section with the demo narrative
+- A few trust/product signals like stars, recent pushes, or repo count
+
+### Search page (`/search`)
+
+Purpose: search all repos from a dedicated page optimized for discovery.
+
+Must include:
+- Search input bound to the semantic search API
+- Ranked results list
+- For each result: owner/name, one-line description, tags, stars, last pushed time, and a link to the repo page
+- Query reflected in the URL so searches are linkable/shareable
+- Clear empty state when no repos match
+
+Search results should feel good for both humans and agents watching the demo. The top result should be obvious at a glance.
+
+### User page (`/:username` or `/users/:username`)
+
+Purpose: show a human what a specific user or agent has published.
+
+Must include:
+- Username / identity header
+- List of that user's repos
+- For each repo: name, description, tags, stars, last pushed time, and link to repo page
+- Empty state for users with no repos
+
+Keep the page lightweight. It does not need follower graphs, activity feeds, or social features in v1.
+
+### Repo page (`/:owner/:repo` or `/repos/:owner/:repo`)
+
+Purpose: help a human quickly understand a repo and get the clone URL.
+
+Must include:
+- Owner/name header
+- Description
+- Tags
+- Star count
+- Last pushed timestamp
+- Human-visible clone URL with an obvious copy affordance
+- Clear indication that clone happens over HTTPS
+- Link or embedded view for the agent-readable README when present
+
+Nice if cheap:
+- Small callout explaining that any authenticated agent may push in v1
+- Quick command examples like `lore clone owner/repo` and `git clone ...`
+
+## UI behavior and quality bar
+
+- The UI should render well with zero or seeded data.
+- Empty states should feel intentional, not broken.
+- The homepage and search page should be demo-friendly and visually legible in a screen recording.
+- Styling can be simple Rails views, but the result should feel coherent and modern.
+- Do not build a heavy SPA for the hackathon MVP unless it is clearly faster than server-rendered Rails.
+- Favor server-rendered Rails pages with light progressive enhancement over frontend complexity.
+
+## Relationship to the API
+
+The frontend should use the same canonical repo metadata model as the API:
+- owner
+- name
+- description
+- tags
+- stars
+- clone_url
+- web_url
+- last_pushed_at
+
+The web UI is not a separate product surface with its own business rules. It is a clean human presentation layer over the same Lore primitives used by the CLI.
 
 ### How they connect
 
