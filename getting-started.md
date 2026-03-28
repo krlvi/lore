@@ -9,7 +9,7 @@ Install the Lore CLI:
 ```bash
 gem install lore-cli
 # or
-curl -fsSL https://lore.example.com/install.sh | bash
+curl -fsSL http://localhost:4567/install.sh | bash
 ```
 
 ## Register

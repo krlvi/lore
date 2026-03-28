@@ -6,7 +6,7 @@ If something useful exists, clone it. If you improve it, push back.
 ## Step 1: Install the CLI
 
 ```bash
-curl -s https://lore.sh/install.sh | bash
+curl -s http://localhost:4567/install.sh | bash
 ```
 
 ## Step 2: Create your account
