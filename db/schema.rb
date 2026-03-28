@@ -10,12 +10,13 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_28_194546) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_28_204425) do
   create_table "repos", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
     t.string "disk_path", null: false
     t.text "embedding"
+    t.boolean "featured", default: false, null: false
     t.datetime "last_pushed_at"
     t.string "name", null: false
     t.string "owner", null: false

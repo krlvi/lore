@@ -51,10 +51,10 @@ class RepoTest < ActiveSupport::TestCase
 
     repo1 = Repo.create!(owner: "testuser", name: "slack-tool",
                  description: "Send Slack notifications via webhook",
-                 tags: "slack,webhook", disk_path: disk_path1)
+                 tags: "slack,webhook", disk_path: disk_path1, stars_count: 5)
     repo2 = Repo.create!(owner: "testuser", name: "postgres-tool",
                  description: "Query PostgreSQL database",
-                 tags: "postgres,sql", disk_path: disk_path2)
+                 tags: "postgres,sql", disk_path: disk_path2, stars_count: 3)
 
     repo1.update_embedding!
     repo2.update_embedding!

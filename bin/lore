@@ -160,7 +160,8 @@ def cmd_clone(args)
 
   # Star it if authenticated
   if token
-    api_request(:post, "/api/v1/repos/#{owner}/#{name}/star", auth: true)
+    star_code, _star_data = api_request(:post, "/api/v1/repos/#{owner}/#{name}/star", auth: true)
+    puts "Starred ★" if star_code == 201
   end
 
   # Get clone URL
